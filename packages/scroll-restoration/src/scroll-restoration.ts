@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { Cache, CacheState, Location } from './shapes';
-import { storageKey, windowKey, delimiter } from './constants';
+import { storageKey, windowKey, delimiter, SCROLL_SAVE_EVENT } from './constants';
 import { functionalUpdate, getCssSelector } from './helpers';
 
 // Use appropriate effect based on environment
@@ -34,6 +34,8 @@ const createCache = (): Cache => {
 };
 
 const cache = createCache();
+
+
 
 export type ScrollRestorationOptions = {
   /**
@@ -111,7 +113,7 @@ const defaultNavigationListener = (
       const prevLocation = lastLocation;
       
       // Trigger scroll position save BEFORE updating location
-      window.dispatchEvent(new Event('scrollRestorationBeforeNavigate'));
+      saveCurrentScrollPositions();
       
       lastLocation = currentLocation;
       onNavigate(prevLocation);
@@ -156,6 +158,15 @@ const defaultNavigationListener = (
     }
   };
 };
+
+/**
+ * Trigger scroll position saving
+ */
+export function saveCurrentScrollPositions(): void {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new Event(SCROLL_SAVE_EVENT));
+  }
+}
 
 /**
  * Hook for scroll restoration in React applications
@@ -305,8 +316,8 @@ export function useScrollRestoration(options?: ScrollRestorationOptions) {
     // Listen for scroll events
     document.addEventListener('scroll', onScroll, true);
 
-    // Listen for a custom event that might be triggered before navigation
-    window.addEventListener('scrollRestorationBeforeNavigate', () => {
+    // Listen for save requests
+    window.addEventListener(SCROLL_SAVE_EVENT, () => {
       saveScrollPositions(locationRef.current);
     });
 
@@ -318,7 +329,7 @@ export function useScrollRestoration(options?: ScrollRestorationOptions) {
 
     return () => {
       document.removeEventListener('scroll', onScroll, true);
-      window.removeEventListener('scrollRestorationBeforeNavigate', () => {
+      window.removeEventListener(SCROLL_SAVE_EVENT, () => {
         saveScrollPositions(locationRef.current);
       });
       cleanup();

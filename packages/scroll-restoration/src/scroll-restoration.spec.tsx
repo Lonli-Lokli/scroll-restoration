@@ -4,8 +4,10 @@ import {
   useScrollRestoration,
   useElementScrollRestoration,
   ScrollRestoration,
+  saveCurrentScrollPositions,
 } from './scroll-restoration';
 import { render } from '@testing-library/react';
+import { storageKey } from './constants';
 
 // Mock sessionStorage
 const mockSessionStorage = (() => {
@@ -176,8 +178,7 @@ describe('useScrollRestoration', () => {
 
     // Simulate navigation
     act(() => {
-      const navigationEvent = new Event('scrollRestorationBeforeNavigate');
-      window.dispatchEvent(navigationEvent);
+      saveCurrentScrollPositions();
 
       // Change the location
       mockWindow.location.pathname = '/page2';
@@ -210,7 +211,7 @@ describe('useScrollRestoration', () => {
       next: {},
     };
     mockSessionStorage.setItem(
-      'scroll-restoration-v2',
+      storageKey,
       JSON.stringify(mockCache)
     );
 
@@ -282,7 +283,7 @@ describe('useScrollRestoration', () => {
       next: {},
     };
     mockSessionStorage.setItem(
-      'scroll-restoration-v2',
+      storageKey,
       JSON.stringify(mockCache)
     );
 
