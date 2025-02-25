@@ -1,0 +1,40 @@
+{
+  "name": "@lonli-lokli/scroll-restoration",
+  "version": "0.3.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "description": "A lightweight, framework-agnostic scroll restoration solution for React applications.",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    "./package.json": "./package.json",
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "!**/*.tsbuildinfo"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Lonli-Lokli/scroll-restoration.git"
+  },
+  "keywords": [
+    "react",
+    "scroll",
+    "restoration",
+    "react-router",
+    "nextjs",
+    "navigation"
+  ],
+  "author": "Lonli-Lokli",
+  "license": "MIT",
+  "peerDependencies": {
+    "react": ">=16.8",
+    "react-dom": ">=16.8"
+  },
+  "sideEffects": false
+}
