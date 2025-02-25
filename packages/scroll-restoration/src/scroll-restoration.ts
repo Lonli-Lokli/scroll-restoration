@@ -3,9 +3,6 @@ import { Cache, CacheState, Location } from './shapes';
 import { storageKey, windowKey, delimiter } from './constants';
 import { functionalUpdate, getCssSelector } from './helpers';
 
-
-
-
 // Use appropriate effect based on environment
 const useIsomorphicLayoutEffect =
   typeof window !== 'undefined' ? React.useLayoutEffect : React.useEffect;
@@ -37,8 +34,6 @@ const createCache = (): Cache => {
 };
 
 const cache = createCache();
-
-
 
 export type ScrollRestorationOptions = {
   /**
@@ -114,12 +109,11 @@ const defaultNavigationListener = (
       currentLocation.hash !== lastLocation.hash
     ) {
       const prevLocation = lastLocation;
-      lastLocation = currentLocation;
-
-      // Save scroll positions first
+      
+      // Trigger scroll position save BEFORE updating location
       window.dispatchEvent(new Event('scrollRestorationBeforeNavigate'));
-
-      // Notify about navigation
+      
+      lastLocation = currentLocation;
       onNavigate(prevLocation);
     }
   };
@@ -254,23 +248,17 @@ export function useScrollRestoration(options?: ScrollRestorationOptions) {
   );
 
   // Handle navigation
-  const handleNavigation = React.useCallback(
-    (previousLocation: Location) => {
-      // Save scroll positions for the page we're leaving
-      saveScrollPositions(previousLocation);
+  const handleNavigation = React.useCallback(() => {
+    // Update location reference
+    locationRef.current = getCurrentLocation();
 
-      // Update our reference to the current location
-      locationRef.current = getCurrentLocation();
-
-      // Use requestAnimationFrame to ensure DOM is ready
+    // Wait for new DOM to be ready
+    requestAnimationFrame(() => {
       requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          restoreScrollPositions(locationRef.current);
-        });
+        restoreScrollPositions(locationRef.current);
       });
-    },
-    [saveScrollPositions, restoreScrollPositions, getCurrentLocation]
-  );
+    });
+  }, [getCurrentLocation, restoreScrollPositions]);
 
   useIsomorphicLayoutEffect(() => {
     if (typeof window === 'undefined') return;
