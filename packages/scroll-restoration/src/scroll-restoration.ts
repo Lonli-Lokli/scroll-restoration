@@ -262,10 +262,12 @@ export function useScrollRestoration(options?: ScrollRestorationOptions) {
       // Update our reference to the current location
       locationRef.current = getCurrentLocation();
 
-      // After render, restore scroll positions
-      setTimeout(() => {
-        restoreScrollPositions(locationRef.current);
-      }, 0);
+      // Use requestAnimationFrame to ensure DOM is ready
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          restoreScrollPositions(locationRef.current);
+        });
+      });
     },
     [saveScrollPositions, restoreScrollPositions, getCurrentLocation]
   );
