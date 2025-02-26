@@ -21,3 +21,26 @@ export type Cache = {
   state: CacheState;
   set: (updater: NonNullableUpdater<CacheState>) => void;
 };
+
+export type ScrollRestorationOptions = {
+  /**
+   * Function to generate a unique key for a location
+   */
+  getKey?: (location: Location) => string;
+
+  /**
+   * Scroll behavior when restoring position
+   */
+  scrollBehavior?: ScrollToOptions['behavior'];
+
+  /**
+   * Optional function to get current location
+   */
+  getCurrentLocation?: () => Location;
+
+  /**
+   * Optional function to listen for location changes
+   * This should return a cleanup function
+   */
+  navigationListener?: (onNavigate: (location: Location) => void) => () => void;
+};

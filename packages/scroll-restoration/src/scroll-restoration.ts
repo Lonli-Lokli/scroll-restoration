@@ -1,6 +1,11 @@
 import * as React from 'react';
-import { Cache, CacheState, Location } from './shapes';
-import { storageKey, windowKey, delimiter, SCROLL_SAVE_EVENT } from './constants';
+import { Cache, CacheState, Location, ScrollRestorationOptions } from './shapes';
+import {
+  storageKey,
+  windowKey,
+  delimiter,
+  SCROLL_SAVE_EVENT,
+} from './constants';
 import { functionalUpdate, getCssSelector } from './helpers';
 
 // Use appropriate effect based on environment
@@ -34,31 +39,6 @@ const createCache = (): Cache => {
 };
 
 const cache = createCache();
-
-
-
-export type ScrollRestorationOptions = {
-  /**
-   * Function to generate a unique key for a location
-   */
-  getKey?: (location: Location) => string;
-
-  /**
-   * Scroll behavior when restoring position
-   */
-  scrollBehavior?: ScrollToOptions['behavior'];
-
-  /**
-   * Optional function to get current location
-   */
-  getCurrentLocation?: () => Location;
-
-  /**
-   * Optional function to listen for location changes
-   * This should return a cleanup function
-   */
-  navigationListener?: (onNavigate: (location: Location) => void) => () => void;
-};
 
 /**
  * Default getKey function
@@ -111,10 +91,10 @@ const defaultNavigationListener = (
       currentLocation.hash !== lastLocation.hash
     ) {
       const prevLocation = lastLocation;
-      
+
       // Trigger scroll position save BEFORE updating location
       saveCurrentScrollPositions();
-      
+
       lastLocation = currentLocation;
       onNavigate(prevLocation);
     }
@@ -313,13 +293,33 @@ export function useScrollRestoration(options?: ScrollRestorationOptions) {
       }
     };
 
+    // Create stable event handler for scroll saving
+    const handleScrollSave = () => {
+      saveScrollPositions(locationRef.current);
+      // Wait for new DOM to be ready and restore positions
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          restoreScrollPositions(locationRef.current);
+        });
+      });
+    };
+
+    // Debounce timer for save operations
+    let saveTimeout: number | null = null;
+
+    // Create stable debounced save function
+    const debouncedSave = () => {
+      if (saveTimeout !== null) {
+        window.clearTimeout(saveTimeout);
+      }
+      saveTimeout = window.setTimeout(handleScrollSave, 0);
+    };
+
     // Listen for scroll events
     document.addEventListener('scroll', onScroll, true);
 
     // Listen for save requests
-    window.addEventListener(SCROLL_SAVE_EVENT, () => {
-      saveScrollPositions(locationRef.current);
-    });
+    window.addEventListener(SCROLL_SAVE_EVENT, debouncedSave);
 
     // Setup navigation listener
     const cleanup = navigationListener(handleNavigation);
@@ -329,9 +329,10 @@ export function useScrollRestoration(options?: ScrollRestorationOptions) {
 
     return () => {
       document.removeEventListener('scroll', onScroll, true);
-      window.removeEventListener(SCROLL_SAVE_EVENT, () => {
-        saveScrollPositions(locationRef.current);
-      });
+      window.removeEventListener(SCROLL_SAVE_EVENT, debouncedSave);
+      if (saveTimeout !== null) {
+        window.clearTimeout(saveTimeout);
+      }
       cleanup();
     };
   }, [
@@ -340,6 +341,7 @@ export function useScrollRestoration(options?: ScrollRestorationOptions) {
     navigationListener,
     handleNavigation,
     saveScrollPositions,
+    restoreScrollPositions,
     getCurrentLocation,
   ]);
 }
