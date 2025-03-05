@@ -5,6 +5,7 @@ import {
   windowKey,
   delimiter,
   SCROLL_SAVE_EVENT,
+  SCROLL_RESTORE_EVENT,
 } from './constants';
 import { functionalUpdate, getCssSelector } from './helpers';
 
@@ -145,6 +146,15 @@ const defaultNavigationListener = (
 export function saveCurrentScrollPositions(): void {
   if (typeof window !== 'undefined') {
     window.dispatchEvent(new Event(SCROLL_SAVE_EVENT));
+  }
+}
+
+/**
+ * Trigger scroll position restoring
+ */
+export function restoreScrollPositions(): void {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new Event(SCROLL_RESTORE_EVENT));
   }
 }
 
@@ -296,30 +306,22 @@ export function useScrollRestoration(options?: ScrollRestorationOptions) {
     // Create stable event handler for scroll saving
     const handleScrollSave = () => {
       saveScrollPositions(locationRef.current);
-      // Wait for new DOM to be ready and restore positions
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          restoreScrollPositions(locationRef.current);
-        });
-      });
     };
 
-    // Debounce timer for save operations
-    let saveTimeout: number | null = null;
-
-    // Create stable debounced save function
-    const debouncedSave = () => {
-      if (saveTimeout !== null) {
-        window.clearTimeout(saveTimeout);
-      }
-      saveTimeout = window.setTimeout(handleScrollSave, 0);
+     // Create stable event handler for scroll restoring
+     const handleScrollRestore = () => {
+      restoreScrollPositions(locationRef.current);
+      
     };
 
     // Listen for scroll events
     document.addEventListener('scroll', onScroll, true);
 
     // Listen for save requests
-    window.addEventListener(SCROLL_SAVE_EVENT, debouncedSave);
+    window.addEventListener(SCROLL_SAVE_EVENT, handleScrollSave);
+
+      // Listen for restore requests
+    window.addEventListener(SCROLL_RESTORE_EVENT, handleScrollRestore);
 
     // Setup navigation listener
     const cleanup = navigationListener(handleNavigation);
@@ -329,10 +331,8 @@ export function useScrollRestoration(options?: ScrollRestorationOptions) {
 
     return () => {
       document.removeEventListener('scroll', onScroll, true);
-      window.removeEventListener(SCROLL_SAVE_EVENT, debouncedSave);
-      if (saveTimeout !== null) {
-        window.clearTimeout(saveTimeout);
-      }
+      window.removeEventListener(SCROLL_SAVE_EVENT, handleScrollSave);
+      window.removeEventListener(SCROLL_RESTORE_EVENT, handleScrollRestore);
       cleanup();
     };
   }, [
