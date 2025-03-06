@@ -178,6 +178,7 @@ export function useScrollRestoration(options?: ScrollRestorationOptions) {
 
       const locationKey = getKey(currentLocation);
 
+      console.log(`Processing Save for key ${locationKey}`, cache.state.next)
       for (const elementSelector in cache.state.next) {
         const entry = cache.state.next[elementSelector]!;
 
@@ -215,6 +216,7 @@ export function useScrollRestoration(options?: ScrollRestorationOptions) {
 
       const locationKey = getKey(currentLocation);
       let windowRestored = false;
+      console.log(`Processing Restore for key ${locationKey}`, cache.state.cached)
 
       for (const cacheKey in cache.state.cached) {
         const entry = cache.state.cached[cacheKey]!;
