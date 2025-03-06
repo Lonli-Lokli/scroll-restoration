@@ -1,5 +1,10 @@
 import * as React from 'react';
-import { Cache, CacheState, Location, ScrollRestorationOptions } from './shapes';
+import {
+  Cache,
+  CacheState,
+  Location,
+  ScrollRestorationOptions,
+} from './shapes';
 import {
   storageKey,
   windowKey,
@@ -7,7 +12,7 @@ import {
   SCROLL_SAVE_EVENT,
   SCROLL_RESTORE_EVENT,
 } from './constants';
-import { functionalUpdate, getCssSelector } from './helpers';
+import { functionalUpdate, getCssSelector, throttle } from './helpers';
 
 // Use appropriate effect based on environment
 const useIsomorphicLayoutEffect =
@@ -173,12 +178,12 @@ export function useScrollRestoration(options?: ScrollRestorationOptions) {
 
   // Handle saving scroll positions
   const saveScrollPositions = React.useCallback(
-    (currentLocation: Location) => {
+    throttle((currentLocation: Location) => {
       if (typeof window === 'undefined') return;
 
       const locationKey = getKey(currentLocation);
 
-      console.log(`Processing Save for key ${locationKey}`, cache.state.next)
+      console.log(`Processing Save for key ${locationKey}`, cache.state.next);
       for (const elementSelector in cache.state.next) {
         const entry = cache.state.next[elementSelector]!;
 
@@ -205,18 +210,21 @@ export function useScrollRestoration(options?: ScrollRestorationOptions) {
           };
         });
       }
-    },
+    }, 100),
     [getKey]
   );
 
   // Handle restoring scroll positions
   const restoreScrollPositions = React.useCallback(
-    (currentLocation: Location) => {
+    throttle((currentLocation: Location) => {
       if (typeof window === 'undefined') return;
 
       const locationKey = getKey(currentLocation);
       let windowRestored = false;
-      console.log(`Processing Restore for key ${locationKey}`, cache.state.cached)
+      console.log(
+        `Processing Restore for key ${locationKey}`,
+        cache.state.cached
+      );
 
       for (const cacheKey in cache.state.cached) {
         const entry = cache.state.cached[cacheKey]!;
@@ -246,7 +254,7 @@ export function useScrollRestoration(options?: ScrollRestorationOptions) {
 
       cache.set((c) => ({ ...c, next: {} }));
       weakScrolledElements = new WeakSet<any>();
-    },
+    }, 100),
     [getKey, options?.scrollBehavior]
   );
 
@@ -292,6 +300,7 @@ export function useScrollRestoration(options?: ScrollRestorationOptions) {
       }
 
       if (!cache.state.next[elementSelector]) {
+        console.log(`Saving Element in cache (Next) ${elementSelector}`);
         cache.set((c) => ({
           ...c,
           next: {
@@ -310,10 +319,9 @@ export function useScrollRestoration(options?: ScrollRestorationOptions) {
       saveScrollPositions(locationRef.current);
     };
 
-     // Create stable event handler for scroll restoring
-     const handleScrollRestore = () => {
+    // Create stable event handler for scroll restoring
+    const handleScrollRestore = () => {
       restoreScrollPositions(locationRef.current);
-      
     };
 
     // Listen for scroll events
@@ -322,7 +330,7 @@ export function useScrollRestoration(options?: ScrollRestorationOptions) {
     // Listen for save requests
     window.addEventListener(SCROLL_SAVE_EVENT, handleScrollSave);
 
-      // Listen for restore requests
+    // Listen for restore requests
     window.addEventListener(SCROLL_RESTORE_EVENT, handleScrollRestore);
 
     // Setup navigation listener
